@@ -4,10 +4,17 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { MongoDBItem } from "@/types/MongoDBItem";
 import ItemCard from "@/components/ItemCard";
+import Link from "next/link";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const EXTENSION_URL =
+  process.env.NEXT_PUBLIC_EXTENSION_URL || "www.grailed.com";
+const TOP_K = parseInt(process.env.NEXT_PUBLIC_TOP_K || "12");
 
 export default function SearchResultsClient() {
   const [items, setItems] = useState<MongoDBItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [noParam, setNoParam] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const searchParams = useSearchParams();
 
@@ -17,13 +24,14 @@ export default function SearchResultsClient() {
       const name = searchParams.get("name");
 
       if (!imageUrl || !name) {
-        setError("Missing image URL or item name");
+        setError("Please use the search extension to search for items");
         setIsLoading(false);
+        setNoParam(true);
         return;
       }
 
       try {
-        const apiUrl = "http://127.0.0.1:8000/api/similarity_search"; // Update this with your actual API URL
+        const apiUrl = `${API_URL}/similarity_search`; // Update this with your actual API URL
         const response = await fetch(apiUrl, {
           method: "POST",
           headers: {
@@ -32,7 +40,7 @@ export default function SearchResultsClient() {
           body: JSON.stringify({
             image_url: imageUrl,
             text_query: name,
-            top_k: 12, // You can adjust this number
+            top_k: TOP_K,
           }),
         });
 
@@ -62,22 +70,38 @@ export default function SearchResultsClient() {
     fetchResults();
   }, [searchParams]);
 
-  const maxItems = 24; // Set the maximum number of items to display
+  const maxItems = 50; // Set the maximum number of items to display
   const displayedItems = items.slice(0, maxItems);
 
   if (isLoading) {
     return <div className="text-center py-10">Loading similar items...</div>;
   }
 
+  if (error && noParam) {
+    return (
+      <div className="flex flex-col items-center">
+        <div className="text-center py-20 text-slate-500 text-xl">{error}</div>
+        <button className="bg-black rounded py-2 px-3 hover:bg-slate-500">
+          <Link href={EXTENSION_URL} className="text-white text-sm">
+            Visit Extension Page
+          </Link>
+        </button>
+      </div>
+    );
+  }
+
   if (error) {
-    return <div className="text-center py-10 text-red-500">{error}</div>;
+    <div className="text-center py-10 text-red-500">{error}</div>;
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-      {displayedItems.map((item) => (
-        <ItemCard key={item.id} item={item} />
-      ))}
+    <div>
+      <h2 className="text-xl font-semibold mb-6">Search Results</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        {displayedItems.map((item) => (
+          <ItemCard key={item.id} item={item} />
+        ))}
+      </div>
     </div>
   );
 }
