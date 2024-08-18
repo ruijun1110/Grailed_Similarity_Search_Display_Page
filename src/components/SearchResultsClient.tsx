@@ -31,18 +31,25 @@ export default function SearchResultsClient() {
       }
 
       try {
-        const apiUrl = `${API_URL}/similarity_search`; // Update this with your actual API URL
-        const response = await fetch(apiUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            image_url: imageUrl,
-            text_query: name,
-            top_k: TOP_K,
-          }),
-        });
+        const apiUrl = `${API_URL}/search`; // Update this with your actual API URL
+        const response = await fetch(
+          `${apiUrl}?image_url=${encodeURIComponent(
+            imageUrl
+          )}&text_query=${encodeURIComponent(name)}&top_k=${encodeURIComponent(
+            TOP_K
+          )}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            //   body: JSON.stringify({
+            //     image_url: imageUrl,
+            //     text_query: name,
+            //     top_k: TOP_K,
+            //   }),
+          }
+        );
 
         if (!response.ok) {
           const errorText = await response.text();
